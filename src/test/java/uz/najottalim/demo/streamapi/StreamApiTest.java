@@ -279,7 +279,15 @@ public class StreamApiTest {
             "01-Feb-2021 va 01-Apr-2021 oralig'ida zakaz qilingan produktlarni oling")
     public void exercise4() {
         List<Product> expected = solution4();
-
+        List<Product> products =  orderRepo.findAll()
+                .stream()
+                .filter(p -> p.getCustomer().getTier()==2)
+                .filter(p -> p.getOrderDate().isAfter(LocalDate.of(2021,2,1)))
+                .filter(p -> p.getOrderDate().isBefore(LocalDate.of(2021,4,1)))
+                .flatMap(order -> order.getProducts().stream())
+                .distinct()
+                .collect(Collectors.toList());
+        Assertions.assertEquals(expected,products);
     }
 
     @Test
@@ -294,8 +302,14 @@ public class StreamApiTest {
     @DisplayName("Obtain a list of product with category = \"Books\" and price > 100 (using BiPredicate for filter)")
     public void exercise1b() {
         List<Product> expected = solution1b();
-    }
+        List<Product> products = productRepo.findAll()
+                .stream()
+                .filter(product -> product.getCategory().equalsIgnoreCase("Books"))
+                .filter(product -> product.getPrice()>100)
+                .collect(Collectors.toList());
+        Assertions.assertEquals(expected,products);
 
+    }
 
     @Test
     @DisplayName("Eng arzon category \"Books\" bo'lgan produktni oling")
@@ -316,6 +330,12 @@ public class StreamApiTest {
             "Eng oxiri zakaz qilingan 3 zakazni oling")
     public void exercise6() {
         List<Order> expected = solution6();
+        List<Order> orders = orderRepo.findAll()
+                .stream()
+                .sorted(Comparator.comparing(Order::getOrderDate).reversed())
+                .limit(3)
+                .collect(Collectors.toList());
+
     }
 
 
@@ -362,6 +382,10 @@ public class StreamApiTest {
             "Customerni orderlarini mapini oling")
     public void exercise12() {
         Map<Customer, List<Order>> expected = solution12();
+        Map<Customer, List<Order>> mySolution = orderRepo.findAll()
+                .stream()
+                .collect(Collectors.groupingBy(costumer -> costumer.getCustomer()));
+        Assertions.assertEquals(expected,mySolution);
     }
 
 
@@ -370,6 +394,12 @@ public class StreamApiTest {
             "Customer idlarini order idlarga mapini oling")
     public void exercise12a() {
         HashMap<Long, List<Long>> expected = solution12a();
+        HashMap<Long, List<Long>> mySolution = orderRepo.findAll()
+                .stream()
+                .collect(Collectors.groupingBy( order -> order.getCustomer().getId(),
+                        HashMap::new,
+                        Collectors.mapping(o -> o.getId(),Collectors.toList())));
+        Assertions.assertEquals(expected,mySolution);
     }
 
 
@@ -378,6 +408,7 @@ public class StreamApiTest {
             "Orderlarni umumiy narxga mapini oling")
     public void exercise13() {
         Map<Order, Double> expected = solution13();
+
     }
 
 
@@ -386,6 +417,9 @@ public class StreamApiTest {
             "Orderlarni umumiy narxga mapini oling (reduce bilan)")
     public void exercise13a() {
         Map<Long, Double> expected = solution13a();
+        Map<Long, Double> map = (Map<Long, Double>) orderRepo.findAll()
+                .stream()
+                .collect(Collectors.toSet());
     }
 
     @Test
@@ -393,6 +427,11 @@ public class StreamApiTest {
             "Produkt nomini categoriyaga boglab chiqaring")
     public void exercise14() {
         Map<String, List<String>> expected = solution14();
+        Map<String, List<String>> map = productRepo.findAll()
+                .stream()
+                .collect(Collectors.groupingBy(Product::getCategory,
+                        Collectors.mapping(Product::getName,Collectors.toList())));
+        Assertions.assertEquals(expected,map);
     }
 
 
@@ -401,6 +440,10 @@ public class StreamApiTest {
             "har bitta Categoriyaga to'g'ri keladigan eng qimmat Productni oling")
     void exercise15() {
         Map<String, Optional<Product>> expected = solution15();
+        Map<String, Optional<Product>> map = productRepo.findAll()
+                .stream()
+                .collect(Collectors.groupingBy(o -> o.getCategory(),
+                        Collectors.maxBy(Comparator.comparing(Product::getPrice))));
 //		result.forEach((k,v) -> {
 //			log.info("key=" + k + ", value=" + v.get());
 //		});
@@ -413,6 +456,8 @@ public class StreamApiTest {
             "har bitta Categoriyaga to'g'ri keladigan eng qimmat Productni (nomini) oling")
     void exercise15a() {
         Map<String, String> expected = solution15a();
+
+
     }
 
     private List<Product> solution1() {
